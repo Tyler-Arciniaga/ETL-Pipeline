@@ -55,6 +55,7 @@ func (w *WorkerPool) ConnectToDB() error {
 
 	db_conn := os.Getenv("DB_CONN")
 	opts := options.Client().ApplyURI(db_conn).SetServerAPIOptions(serverAPI)
+
 	// Create a new client and connect to the server
 	client, err := mongo.Connect(opts)
 	if err != nil {
