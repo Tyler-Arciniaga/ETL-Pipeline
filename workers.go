@@ -18,9 +18,8 @@ type WorkerPool struct {
 }
 
 type EmbeddingRequest struct {
-	Model      string `json:"model"`
-	Input      []byte `json:"input"`
-	Dimensions uint64 `json:"dimensions"`
+	Model string `json:"model"`
+	Input string `json:"input"`
 }
 
 func NewWorkerPool(numWorkers uint64) *WorkerPool {
@@ -50,7 +49,7 @@ func (w *WorkerPool) StopPool() {
 
 func (w *WorkerPool) Work(id uint64) {
 	fmt.Printf("Worker %d running!\n", id)
-	client := &http.Client{Timeout: 60 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	for job := range w.JobChan {
 		w.CreateVectorEmbedding(job, client)
 		w.wg.Done()
@@ -59,7 +58,7 @@ func (w *WorkerPool) Work(id uint64) {
 
 func (w *WorkerPool) CreateVectorEmbedding(buf []byte, client *http.Client) {
 	url := "http://localhost:11434/api/embed"
-	embeddingReq := EmbeddingRequest{Model: "qwen3-embedding:4b", Input: buf, Dimensions: 1000}
+	embeddingReq := EmbeddingRequest{Model: "qwen3-embedding:4b", Input: string(buf)}
 	postBody, err := json.Marshal(embeddingReq)
 	if err != nil {
 		slog.Error("marshalling embedding request", "err", err)

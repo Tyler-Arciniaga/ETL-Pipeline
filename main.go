@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+//TODO try chunking together HTTP requests to Ollama to embded multiple strings
+
 type ETL struct {
 	WorkerPool *WorkerPool
 }
