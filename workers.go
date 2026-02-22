@@ -8,11 +8,11 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type WorkerPool struct {
 	JobChan    chan ([]byte)
-	DoneChans  []chan (byte)
 	NumWorkers uint64
 	wg         sync.WaitGroup
 }
@@ -24,14 +24,12 @@ type EmbeddingRequest struct {
 }
 
 func NewWorkerPool(numWorkers uint64) *WorkerPool {
-	return &WorkerPool{JobChan: make(chan ([]byte)), DoneChans: make([]chan (byte), 0), NumWorkers: numWorkers, wg: sync.WaitGroup{}}
+	return &WorkerPool{JobChan: make(chan []byte, 100), NumWorkers: numWorkers, wg: sync.WaitGroup{}}
 }
 
 func (w *WorkerPool) StartPool() {
 	for i := range w.NumWorkers {
-		doneChan := make(chan (byte))
-		w.DoneChans = append(w.DoneChans, doneChan)
-		go w.Work(i, doneChan)
+		go w.Work(i)
 	}
 }
 
@@ -41,31 +39,25 @@ func (w *WorkerPool) SubmitJob(job []byte) {
 }
 
 func (w *WorkerPool) WaitToFinish() {
-	w.wg.Wait()
 	w.StopPool()
+	w.wg.Wait()
 	fmt.Println("All jobs finished!")
 }
 
 func (w *WorkerPool) StopPool() {
-	for _, done := range w.DoneChans {
-		go func() {
-			done <- 1
-		}()
-	}
+	close(w.JobChan)
 }
 
-func (w *WorkerPool) Work(id uint64, doneChan chan (byte)) {
+func (w *WorkerPool) Work(id uint64) {
 	fmt.Printf("Worker %d running!\n", id)
-	select {
-	case job := <-w.JobChan:
-		fmt.Printf("Worker %d started a job\n", id)
-		w.CreateVectorEmbedding(job)
-	case <-doneChan:
-		return
+	client := &http.Client{Timeout: 60 * time.Second}
+	for job := range w.JobChan {
+		w.CreateVectorEmbedding(job, client)
+		w.wg.Done()
 	}
 }
 
-func (w *WorkerPool) CreateVectorEmbedding(buf []byte) {
+func (w *WorkerPool) CreateVectorEmbedding(buf []byte, client *http.Client) {
 	url := "http://localhost:11434/api/embed"
 	embeddingReq := EmbeddingRequest{Model: "qwen3-embedding:4b", Input: buf, Dimensions: 1000}
 	postBody, err := json.Marshal(embeddingReq)
@@ -76,7 +68,7 @@ func (w *WorkerPool) CreateVectorEmbedding(buf []byte) {
 
 	requestBody := bytes.NewBuffer(postBody)
 
-	resp, err := http.Post(url, "application/json", requestBody)
+	resp, err := client.Post(url, "application/json", requestBody)
 	if err != nil {
 		slog.Error("sending post request to Ollama embedding api", "err", err)
 		return
@@ -90,5 +82,4 @@ func (w *WorkerPool) CreateVectorEmbedding(buf []byte) {
 	}
 
 	fmt.Println("Got response:", string(body))
-	w.wg.Done()
 }
