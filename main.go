@@ -9,12 +9,14 @@ import (
 	"path/filepath"
 )
 
+//TODO make worker pool async, make ETL wait for workers to finish embedding all text data before moving on
+
 type ETL struct {
 	WorkerPool *WorkerPool
 }
 
 func main() {
-	workerPool := NewWorkerPool(3)
+	workerPool := NewWorkerPool(4)
 	etl := ETL{WorkerPool: workerPool}
 	etl.Start()
 }
@@ -23,6 +25,8 @@ func (e ETL) Start() {
 	e.WorkerPool.StartPool()
 	dir := "test-data" // TODO change from hardcoded file directory to specified by user args
 	filepath.WalkDir(dir, e.ingestDirectory)
+	e.WorkerPool.WaitToFinish()
+	fmt.Println("Finished embedding all text content!")
 }
 
 func (e ETL) ingestDirectory(path string, d fs.DirEntry, err error) error {
