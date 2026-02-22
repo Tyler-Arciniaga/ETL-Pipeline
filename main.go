@@ -9,12 +9,23 @@ import (
 	"path/filepath"
 )
 
-func main() {
-	dir := "test-data" // TODO change from hardcoded file directory to specified by user args
-	filepath.WalkDir(dir, ingestDirectory)
+type ETL struct {
+	WorkerPool *WorkerPool
 }
 
-func ingestDirectory(path string, d fs.DirEntry, err error) error {
+func main() {
+	workerPool := NewWorkerPool(3)
+	etl := ETL{WorkerPool: workerPool}
+	etl.Start()
+}
+
+func (e ETL) Start() {
+	e.WorkerPool.StartPool()
+	dir := "test-data" // TODO change from hardcoded file directory to specified by user args
+	filepath.WalkDir(dir, e.ingestDirectory)
+}
+
+func (e ETL) ingestDirectory(path string, d fs.DirEntry, err error) error {
 	if err != nil {
 		return err
 	}
@@ -29,7 +40,7 @@ func ingestDirectory(path string, d fs.DirEntry, err error) error {
 			return nil
 		} //skip files that are not txt or md
 
-		err = readFile(path)
+		err = e.readFile(path)
 		if err != nil {
 			return err
 		}
@@ -38,7 +49,7 @@ func ingestDirectory(path string, d fs.DirEntry, err error) error {
 	return nil
 }
 
-func readFile(filepath string) error {
+func (e ETL) readFile(filepath string) error {
 	fmt.Println("File:", filepath)
 
 	file, err := os.Open(filepath)
@@ -57,6 +68,7 @@ func readFile(filepath string) error {
 			return err
 		}
 
+		e.WorkerPool.SubmitJob(buf[:n])
 		checksum = sha256.Sum256(buf[:n])
 		fmt.Println("Checksum:", checksum)
 	}
