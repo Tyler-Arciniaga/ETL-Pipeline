@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/fs"
@@ -17,7 +16,7 @@ type ETL struct {
 }
 
 func main() {
-	workerPool := NewWorkerPool(4)
+	workerPool := NewWorkerPool(5)
 	etl := ETL{WorkerPool: workerPool}
 	etl.Start()
 }
@@ -65,8 +64,8 @@ func (e ETL) readFile(filepath string) error {
 		return err
 	}
 
-	var checksum [32]byte
 	buf := make([]byte, 4096)
+	chunkNum := uint64(0)
 	for {
 		n, err := file.Read(buf)
 		if err != nil {
@@ -76,9 +75,8 @@ func (e ETL) readFile(filepath string) error {
 			return err
 		}
 
-		e.WorkerPool.SubmitJob(buf[:n])
-		checksum = sha256.Sum256(buf[:n])
-		fmt.Println("Checksum:", checksum)
+		e.WorkerPool.SubmitJob(buf[:n], filepath, chunkNum)
+		chunkNum++
 	}
 
 	return nil
