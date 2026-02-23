@@ -1,0 +1,5 @@
+Modern databases are optimized for a variety of workloads, including transactional processing and large-scale analytics. Traditional relational databases use structured schemas and SQL queries to manage data integrity.
+
+NoSQL systems, on the other hand, often prioritize scalability and flexible document-based storage. Vector databases extend this paradigm by enabling similarity search on high-dimensional embeddings. These embeddings represent text, images, or other data types numerically.
+
+Indexing strategies such as approximate nearest neighbor algorithms allow fast semantic retrieval across millions of vectors.

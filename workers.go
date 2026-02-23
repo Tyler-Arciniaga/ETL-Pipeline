@@ -98,7 +98,7 @@ func (w *WorkerPool) Work(id uint64) {
 	fmt.Printf("Worker %d running!\n", id)
 	client := &http.Client{Timeout: 30 * time.Second}
 	for job := range w.JobChan {
-		embeddingResp := w.CreateVectorEmbedding(job.rawContent, client)
+		embeddingResp := w.CreateVectorEmbedding(string(job.rawContent), client)
 		checksum := w.CreateChecksum(job.rawContent)
 		w.UpsertData(embeddingResp, checksum, job)
 		w.wg.Done()
@@ -125,9 +125,9 @@ func (w *WorkerPool) ToFloat32Slice(input []float64) []float32 {
 	return out
 }
 
-func (w *WorkerPool) CreateVectorEmbedding(buf []byte, client *http.Client) EmbeddingResponse {
+func (w *WorkerPool) CreateVectorEmbedding(input string, client *http.Client) EmbeddingResponse {
 	url := "http://localhost:11434/api/embed"
-	embeddingReq := EmbeddingRequest{Model: "qwen3-embedding:4b", Input: string(buf)}
+	embeddingReq := EmbeddingRequest{Model: "qwen3-embedding:4b", Input: input}
 	postBody, err := json.Marshal(embeddingReq)
 	if err != nil {
 		slog.Error("marshalling embedding request", "err", err)
