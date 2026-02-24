@@ -34,4 +34,5 @@ type CommandFlags struct {
 	Workers uint64
 	Query   bool
 	Input   string
+	Web     bool
 }
