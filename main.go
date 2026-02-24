@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-//TODO try chunking together HTTP requests to Ollama to embded multiple strings
+// TODO write web ingestor logic
+// TODO try chunking together HTTP requests to Ollama to embded multiple strings
 
 type ETL struct {
 	Ingestor       Ingestor
@@ -25,11 +26,12 @@ func main() {
 		etl.StartQuery(flags.Input)
 	} else {
 		if flags.Web {
-			// etl.Ingestor = WebIngestor{}
+			etl.Ingestor = WebIngestor{WorkerPool: workerPool}
 		} else {
 			etl.Ingestor = FileIngestor{WorkerPool: workerPool}
-			etl.StartIngest(flags.Dir)
 		}
+
+		etl.StartIngest(flags.Src)
 	}
 
 	elapsed := time.Since(start)
@@ -37,14 +39,14 @@ func main() {
 }
 
 func HandleCommandArgs() CommandFlags {
-	dir := flag.String("dir", "test-data", "root folder to ingest")
+	src := flag.String("src", "test-data", "root source to start ingest from")
 	workers := flag.Uint64("workers", 1, "number of workers to embed data chunks")
 	query := flag.Bool("query", false, "toggle query mode")
 	input := flag.String("input", "", "input for query")
 	web := flag.Bool("web", false, "toggle web ingest mode")
 	flag.Parse()
 
-	return CommandFlags{Dir: *dir, Workers: *workers, Query: *query, Input: *input, Web: *web}
+	return CommandFlags{Src: *src, Workers: *workers, Query: *query, Input: *input, Web: *web}
 }
 
 func (e ETL) StartIngest(rootSource string) {

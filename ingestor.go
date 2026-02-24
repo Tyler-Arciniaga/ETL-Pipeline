@@ -10,23 +10,25 @@ import (
 
 type Ingestor interface {
 	StartIngest(rootSource string)
-	IngestSource(path string) error
-	ReadSource(path string) error
 }
 
 type FileIngestor struct {
 	WorkerPool *WorkerPool
 }
 
+type WebIngestor struct {
+	WorkerPool *WorkerPool
+}
+
+func (w WebIngestor) StartIngest(rootSource string) {}
+
 func (f FileIngestor) StartIngest(rootDir string) {
 	f.WorkerPool.StartPool()
-	filepath.WalkDir(rootDir, f.ingestDirectory)
+	filepath.WalkDir(rootDir, f.IngestDirectory)
 	f.WorkerPool.WaitToFinish()
 }
 
-func (f FileIngestor) IngestSource(path string) error { return nil }
-
-func (f FileIngestor) ingestDirectory(path string, d fs.DirEntry, err error) error {
+func (f FileIngestor) IngestDirectory(path string, d fs.DirEntry, err error) error {
 	if err != nil {
 		return err
 	}
@@ -41,7 +43,7 @@ func (f FileIngestor) ingestDirectory(path string, d fs.DirEntry, err error) err
 			return nil
 		} //skip files that are not txt or md
 
-		err = f.ReadSource(path)
+		err = f.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -50,7 +52,7 @@ func (f FileIngestor) ingestDirectory(path string, d fs.DirEntry, err error) err
 	return nil
 }
 
-func (f FileIngestor) ReadSource(filepath string) error {
+func (f FileIngestor) ReadFile(filepath string) error {
 	fmt.Println("File:", filepath)
 
 	file, err := os.Open(filepath)

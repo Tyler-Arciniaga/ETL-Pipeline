@@ -30,7 +30,7 @@ type EmbeddingResponse struct {
 }
 
 type CommandFlags struct {
-	Dir     string
+	Src     string
 	Workers uint64
 	Query   bool
 	Input   string
